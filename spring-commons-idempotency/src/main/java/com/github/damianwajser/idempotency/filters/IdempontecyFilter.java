@@ -20,6 +20,7 @@ import org.springframework.util.Assert;
 
 import javax.servlet.*;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletRequestWrapper;
 import javax.servlet.http.HttpServletResponse;
 import java.io.CharArrayWriter;
 import java.io.IOException;
@@ -54,7 +55,7 @@ public class IdempontecyFilter implements Filter {
 	public void doFilter(ServletRequest req, ServletResponse res, FilterChain chain)
 			throws IOException, ServletException {
 
-		HttpServletRequest request = (HttpServletRequest) req;
+		HttpServletRequestWrapper request = new HttpServletRequestWrapper((HttpServletRequest) req);
 		HttpServletResponse response = (HttpServletResponse) res;
 		if (idempotencyEndpoints.isApplicable(request)) {
 			executeIdempotency(chain, request, response);

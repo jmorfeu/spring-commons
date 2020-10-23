@@ -1,5 +1,6 @@
 package com.github.damianwajser.tests;
 
+import com.github.damianwajser.exceptions.ExceptionFactory;
 import com.github.damianwajser.exceptions.model.ErrorMessage;
 import com.github.damianwajser.exceptions.model.ExceptionDetail;
 import org.junit.Assert;
@@ -7,11 +8,15 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mockito;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.HttpStatus;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -34,4 +39,16 @@ public class ErrorMessageTest {
 
 	}
 
+	@Test
+	public void ErrorMessage() {
+		try {
+			throw ExceptionFactory.getException(getDetails(), HttpStatus.NOT_FOUND);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
+	private List<ExceptionDetail> getDetails() {
+		return Arrays.asList(new ExceptionDetail("error", "a", Optional.of("algo")));
+	}
 }

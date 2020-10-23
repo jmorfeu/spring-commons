@@ -1,5 +1,8 @@
 package com.github.damianwajser.exceptions;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.github.damianwajser.exceptions.model.ErrorMessage;
 import com.github.damianwajser.exceptions.model.ExceptionDetail;
 import org.springframework.http.HttpStatus;
@@ -24,9 +27,21 @@ public abstract class RestException extends Exception {
 	protected final List<ExceptionDetail> details;
 
 	public RestException(List<ExceptionDetail> details, Exception e) {
-		super(e);
+		super(getMessageJson(details), e);
 		Assert.notNull(details, "details can't be null");
 		this.details = details;
+	}
+
+	private static String getMessageJson(List<ExceptionDetail> details) {
+		String message = "can't parse details";
+		try {
+			ObjectMapper mapper = new ObjectMapper();
+			mapper.registerModule(new Jdk8Module());
+			message = mapper.writeValueAsString(details);
+		} catch (JsonProcessingException e) {
+			e.printStackTrace();
+		}
+		return message;
 	}
 
 	public RestException(List<ExceptionDetail> details) {
