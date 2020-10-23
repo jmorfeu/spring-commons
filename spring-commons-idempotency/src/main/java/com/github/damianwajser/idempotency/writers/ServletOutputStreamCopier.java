@@ -13,7 +13,7 @@ public class ServletOutputStreamCopier extends ServletOutputStream {
 
     public ServletOutputStreamCopier(OutputStream outputStream) {
         this.outputStream = outputStream;
-        this.copy = new ByteArrayOutputStream(1024);
+        this.copy = new ByteArrayOutputStream(2024);
     }
 
     @Override

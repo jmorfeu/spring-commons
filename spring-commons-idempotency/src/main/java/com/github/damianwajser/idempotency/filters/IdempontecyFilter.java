@@ -17,11 +17,13 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.util.Assert;
+import org.springframework.web.util.ContentCachingRequestWrapper;
 
 import javax.servlet.*;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletRequestWrapper;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpServletResponseWrapper;
 import java.io.CharArrayWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -55,10 +57,14 @@ public class IdempontecyFilter implements Filter {
 	public void doFilter(ServletRequest req, ServletResponse res, FilterChain chain)
 			throws IOException, ServletException {
 
-		HttpServletRequestWrapper request = new HttpServletRequestWrapper((HttpServletRequest) req);
-		HttpServletResponse response = (HttpServletResponse) res;
+		ContentCachingRequestWrapper request = new ContentCachingRequestWrapper((HttpServletRequest) req);
+		HttpServletResponseWrapper response = new HttpServletResponseWrapper((HttpServletResponse) res);
 		if (idempotencyEndpoints.isApplicable(request)) {
-			executeIdempotency(chain, request, response);
+			try {
+				executeIdempotency(chain, request, response);
+			} catch (Throwable e) {
+				e.printStackTrace();
+			}
 		} else {
 			chain.doFilter(request, response);
 		}
@@ -92,13 +98,10 @@ public class IdempontecyFilter implements Filter {
 			HttpServletResponseCopier responseCopier = new HttpServletResponseCopier(response);
 			LOGGER.info("Call the real controller");
 			chain.doFilter(request, responseCopier);
-			byte[] copy = responseCopier.getCopy();
-			String value = new String(copy);
+			String value = new String(responseCopier.getCopy());
 			StoredResponse storeObject = new StoredResponse(value, new HeadersUtil().getHeadersMap(response), response.getStatus(), false);
 			LOGGER.info("store request key: {} - value: {}", key, storeObject);
-			redisTemplate.opsForValue().set(key, storeObject);
-			LOGGER.info("set expiration - request key: {} ttl: ", key);
-			redisTemplate.expire(key, idempotencyProperties.getIdempotencyTtl(), TimeUnit.MILLISECONDS);
+			redisTemplate.opsForValue().set(key, storeObject, idempotencyProperties.getIdempotencyTtl(), TimeUnit.MILLISECONDS);
 		} catch (Exception e) {
 			LOGGER.error("Error to save idempotency response in redis", e);
 		}
